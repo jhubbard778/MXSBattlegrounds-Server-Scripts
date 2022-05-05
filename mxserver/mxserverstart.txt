@@ -1,0 +1,1 @@
+mxserver.exe --args-file serverargs.txt

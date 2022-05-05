@@ -1,0 +1,21 @@
+--password 12345
+--admin 23971
+--greeting "Welcome to hubbo's server"
+--javascript js/grabuid.js
+--javascript js/help.js
+--javascript js/pm.js
+--javascript js/myinfo.js
+--javascript js/roleshierarchy.js
+--javascript js/chatfilter.js
+--javascript js/kick_or_spec_not_signed_up.js
+--results-file results.txt
+--lineup-file lineup.txt
+--ban-file bans.txt
+--track-interval -1
+--no-arcade
+--xcmd-password 12345
+--min-version 13
+--minutes 5
+--max-clients 35
+--laps 1
+trackinfo/RandomSX9.trackinfo
