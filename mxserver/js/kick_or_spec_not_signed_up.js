@@ -1,10 +1,7 @@
-// Justin Baker 2022
+// Justin Baker/Jakob Hubbard 2022
 // MXS Battlegrounds!
 
-// Empty list of riders, will kick everyone
-//var url = "https://gist.githubusercontent.com/justbaker/a296e0a9b483036e0539598241de3102/raw/9af03de87fee993d55eb4b1c0bf1cd7fbd6687d6/signed-up-riders-blank.json";
-// Good list of riders with uid 6529 and 23971
-var url = "https://gist.githubusercontent.com/justbaker/a296e0a9b483036e0539598241de3102/raw/9af03de87fee993d55eb4b1c0bf1cd7fbd6687d6/signed-up-riders-blank.json";
+var url = "https://mxsbattlegrounds.com/servers/na-mxsbattlegrounds-com19800/json/";
 var output_file = "files/signedriders.txt";
 
 var race_server = value_in_file("raceserver");

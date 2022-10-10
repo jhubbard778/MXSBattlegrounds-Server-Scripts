@@ -13,6 +13,16 @@ function read_roles() {
 var read_roles_prev = mxserver.start_handler;
 mxserver.start_handler = read_roles;
 
+var url = "https://mxsbattlegrounds.com/servers/na-mxsbattlegrounds-com19800/json/";
+var outfile = "files/signedriders.txt";
+
+function fetch_signed_up_riders() {
+    mxserver.log("fetching signed up riders\n"); 
+    mxserver.system("curl " + url + " > " + outfile);
+    var file = mxserver.file_to_string(outfile);
+    return JSON.parse(file).riders;
+}
+
 function grab_uid(slot, cmdline) {
 
 	if (cmdline.match(/^\s*grabuid\b/) == null)
@@ -42,7 +52,13 @@ function grab_uid(slot, cmdline) {
         var time_to_execute = sec_1_min_remain;
         mxserver.broadcast("\x1b[36mUID Grab in " + min_til_uid + " min\x1b[0m");
         while (min_til_uid > 1) {
+            // Start displaying minutes til uid at 1 hour, then increment by half every time.  Min time to start at even half is at 30 minutes.
+            if (min_til_uid > Math.ceil(min_til_uid / 60) * 60 || min_til_uid > 120) {
+                min_til_uid--;
+                continue;
+            }
             min_til_uid = Math.floor(min_til_uid / 2);
+            // Get difference from execution of grabuid command vs execution of broadcast command in seconds
             var diff_sec = (min_til_uid_holder - min_til_uid) * 60;
             mxserver.schedule_command("at +" + diff_sec + " broadcast \x1b[36mUID Grab in " + min_til_uid + " min\x1b[0m");
         }
@@ -77,7 +93,7 @@ mxserver.command_handler = grab_uid;
 
 function write_uids_to_file(sender) {
     // reads signed riders into array
-    var signed_uids = JSON.parse(mxserver.file_to_string("files/signedriders.txt")).riders;
+    var signed_uids = fetch_signed_up_riders();
     mxserver.log('signed riders: ' + signed_uids.toString() + '\n');
     if (!signed_uids || signed_uids.length == 0) {
         mxserver.broadcast("\x1b[31mError: No UIDS to grab!\x1b[0m");
@@ -88,7 +104,7 @@ function write_uids_to_file(sender) {
     var uid_index = 0;
     for (var slot = 0; slot < mxserver.max_slots; slot++) {
         var slot_info = mxserver.get_slot_info(slot);
-        if (slot_info.uid != 0 && signed_uids.indexOf(slot_info.uid) !== -1) {
+        if (slot_info.uid != 0) {
             uids[uid_index] = slot_info.uid;
             names[uid_index] = slot_info.name;
             uid_index++;
@@ -109,7 +125,6 @@ function write_uids_to_file(sender) {
         return 0;
     }
     return 1;*/
-    
 
     //3) separate them back out:
     for (var k = 0; k < list.length; k++) {
@@ -136,7 +151,7 @@ function read_uids(sender) {
     var names = mxserver.file_to_string("files/uidgrab/names.txt").split(',').filter(function(name){return name.length > 0;});
 
     if (uids.length != names.length) {
-        mxserver.send(sender, "\x1b[41mError generating slots/UIDS\x1b[0m");
+        mxserver.send(sender, "\x1b[41mError getting UIDS/names\x1b[0m");
         return;
     }
 
