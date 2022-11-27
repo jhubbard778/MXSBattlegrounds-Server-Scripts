@@ -267,7 +267,19 @@ function admin_mod_chat_messages(slot, msg) {
 
 	if (assigned_role) {
 		output_rank += ") ";
-		mxserver.broadcast(output_rank + rider_info.name + ": " + msg);
+		var completeMsg = output_rank + rider_info.name + ": " + msg;
+
+		// only send the message to people who have no ignore setting
+		for (i = 0; i < mxserver.max_slots; i++) {
+			var status = mxserver.get_status(i);
+			if (status == "Player") {
+				var ignore = mxserver.get_string("ignore", i);
+				if (ignore == "ALL" || (ignore == "SPECS" && rider_info.status != "Player"))
+					continue;
+			}
+			mxserver.send(i, completeMsg);
+		}
+		mxserver.write_demo_message(completeMsg);
 		return 1;
 	}
 }

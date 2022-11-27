@@ -44,7 +44,7 @@ function change_sign_ups_or_race_server(slot, cmdline) {
   var uid = mxserver.get_uid(slot);
   var rank = mxserver.get_rank(slot);
 
-	if (rank != "Admin" && admins.indexOf(uid) === -1 && hosts.indexOf(uid) === -1) {
+	if (rank != "Admin" && admins.indexOf(uid) === -1 && hosts.indexOf(uid) === -1 && uid > 0) {
     mxserver.send(slot, "Permission Denied");
     return 1;
 	}

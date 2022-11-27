@@ -74,7 +74,7 @@ function grab_uid(slot, cmdline) {
         mxserver.schedule_command("at +" + time_to_execute + " forceplay " + uid);
         mxserver.schedule_command("at +" + time_to_execute + " lock");
         mxserver.schedule_command("at +" + time_to_execute + " restart");
-        time_to_execute += 15;
+        time_to_execute += 25;
         mxserver.schedule_command("at +" + time_to_execute + " grabuid confirm");
     }
     else if (m[1] == "confirm" && !m[2]) {
@@ -94,7 +94,6 @@ mxserver.command_handler = grab_uid;
 function write_uids_to_file(sender) {
     // reads signed riders into array
     var signed_uids = fetch_signed_up_riders();
-    mxserver.log('signed riders: ' + signed_uids.toString() + '\n');
     if (!signed_uids || signed_uids.length == 0) {
         mxserver.broadcast("\x1b[31mError: No UIDS to grab!\x1b[0m");
         return;
@@ -104,7 +103,7 @@ function write_uids_to_file(sender) {
     var uid_index = 0;
     for (var slot = 0; slot < mxserver.max_slots; slot++) {
         var slot_info = mxserver.get_slot_info(slot);
-        if (slot_info.uid != 0) {
+        if (slot_info.uid != 0 && signed_uids.indexOf(slot_info.uid) !== -1) {
             uids[uid_index] = slot_info.uid;
             names[uid_index] = slot_info.name;
             uid_index++;
@@ -128,45 +127,42 @@ function write_uids_to_file(sender) {
 
     //3) separate them back out:
     for (var k = 0; k < list.length; k++) {
-        names[k] = list[k].name;
+        names[k] = list[k];
         uids[k] = list[k].uid;
     }
 
-    mxserver.log('uids: ' + uids.toString() + '\n');
     if (uids.length > 0) {
         mxserver.string_to_file("files/uidgrab/uids.txt",uids.toString());
-        mxserver.string_to_file("files/uidgrab/names.txt",names.toString());
+        mxserver.string_to_file("files/uidgrab/names.txt",JSON.stringify(names));
     }
     else {
         mxserver.broadcast("\x1b[31mError: No UIDS to grab!\x1b[0m");
         return;
     }
     mxserver.send(sender, "\x1b[32mSuccesfully grabbed and saved UIDS to 'files/uidgrab/uids.txt'!\x1b[0m")
-    read_uids(sender);
+    read_uids();
     return;
 }
 
-function read_uids(sender) {
-    var uids = mxserver.file_to_string("files/uidgrab/uids.txt").split(',').map(Number).filter(function(uid){return uid > 0;});
-    var names = mxserver.file_to_string("files/uidgrab/names.txt").split(',').filter(function(name){return name.length > 0;});
-
-    if (uids.length != names.length) {
-        mxserver.send(sender, "\x1b[41mError getting UIDS/names\x1b[0m");
-        return;
+function read_uids() {
+    try {
+        var names = JSON.parse(mxserver.file_to_string("files/uidgrab/names.txt"));
+    } catch (e) {
+        mxserver.log("error: " + e);
     }
 
     var racers = "Racers";
-    if (uids.length == 1) racers = "Racer";
+    if (names.length == 1) racers = "Racer";
 
     mxserver.broadcast("\x1b[31m##################################\x1b[0m");
-    mxserver.broadcast("\x1b[31m          Grabbed UIDS - " + uids.length + " " + racers + "\x1b[0m");
+    mxserver.broadcast("\x1b[31m          Grabbed UIDS - " + names.length + " " + racers + "\x1b[0m");
     mxserver.broadcast("\x1b[31m##################################\x1b[0m");
 
-    for (var i = 0; i < uids.length; i++) {
-        mxserver.broadcast((i + 1) + ') ' + uids[i] + ' - ' + names[i]);
+    for (var i = 0; i < names.length; i++) {
+        mxserver.broadcast((i + 1) + ') ' + names[i].uid + ' - ' + names[i].name);
         for (var slot = 0; slot < mxserver.max_slots; slot++) {
             var rider_uid = mxserver.get_uid(slot);
-            if (rider_uid == uids[i]) {
+            if (rider_uid == names[i].uid) {
                 mxserver.send(slot, "\x1b[36mYour UID Has Been Grabbed\x1b[0m"); 
                 break;
             }
