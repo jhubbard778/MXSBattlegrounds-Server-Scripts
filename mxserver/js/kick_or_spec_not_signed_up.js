@@ -1,8 +1,8 @@
 // Justin Baker/Jakob Hubbard 2022
 // MXS Battlegrounds!
 
-var url = "https://mxsbattlegrounds.com/servers/na-mxsbattlegrounds-com19800/json/";
-var output_file = "files/signedriders.txt";
+var url = "https://battlegrounds.jhubbard.me/servers/bgservers-jhubbard-me19800/json/";
+var outfile = "files/signedriders.txt";
 
 var race_server = value_in_file("raceserver");
 
@@ -22,8 +22,8 @@ function is_special_user(slot_info) {
 
 function fetch_signed_up_riders() {
   mxserver.log("fetching signed up riders\n"); 
-  mxserver.system("curl " + url + " > " + output_file);
-  var file = mxserver.file_to_string(output_file);
+  mxserver.system("curl " + url + " > " + outfile);
+  var file = mxserver.file_to_string(outfile);
   return JSON.parse(file).riders;
 }
 
@@ -44,7 +44,7 @@ function change_sign_ups_or_race_server(slot, cmdline) {
   var uid = mxserver.get_uid(slot);
   var rank = mxserver.get_rank(slot);
 
-	if (rank != "Admin" && admins.indexOf(uid) === -1 && hosts.indexOf(uid) === -1 && uid > 0) {
+	if (uid > 0 && rank != "Admin" && admins.indexOf(uid) === -1 && hosts.indexOf(uid) === -1) {
     mxserver.send(slot, "Permission Denied");
     return 1;
 	}

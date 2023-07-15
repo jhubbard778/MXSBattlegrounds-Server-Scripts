@@ -1,0 +1,15 @@
+#mxserverscript
+broadcast [31;1m ----------------------------------------
+broadcast [31;1m	   250E Heat 1
+broadcast [31;1m ----------------------------------------
+allignore all
+lock
+clearclass
+forcespec all
+homologate 250sxf(2018)|crf250|fc250|kx250f|rmz250|yz250f|yz250f_se|125sx|cr125|kx125|rm125|yz125
+broadcast [37;1m Jakob Hubbard | Phil's x UGRC -2-
+forceplay 23971
+broadcastto 23971 [36m You are in 250E Heat 1
+broadcast [31;1m ----------------------------------------
+broadcast [31;1m	     1 Rider
+broadcast [31;1m ----------------------------------------
