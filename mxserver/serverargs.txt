@@ -1,6 +1,8 @@
 --password 12345
 --admin 23971
---greeting "Welcome to hubbo's server"
+--ban-file bans.txt
+--greeting "MXS Battlegrounds Private Testing Server"
+--demo-file files/demos/tmp/default.mxdemo
 --javascript js/grabuid.js
 --javascript js/help.js
 --javascript js/pm.js
@@ -8,14 +10,18 @@
 --javascript js/roleshierarchy.js
 --javascript js/chatfilter.js
 --javascript js/kick_or_spec_not_signed_up.js
+--javascript js/iplogger.js
+--javascript js/updatetracklist.js
 --results-file results.txt
 --lineup-file lineup.txt
 --ban-file bans.txt
 --track-interval -1
+--xcmd-password password
 --no-arcade
---xcmd-password 12345
 --min-version 13
---minutes 5
+--minutes 15
 --max-clients 35
 --laps 1
-trackinfo/RandomSX9.trackinfo
+trackinfo/2023BhAx4.trackinfo
+trackinfo/2023BhAx4Revised.trackinfo
+trackinfo/2023BhAx4RevisedRace.trackinfo

@@ -416,6 +416,14 @@ function remove_roles_from_file(sender, role, sent_uid) {
 				rider_not_found = false;
 			}
 			break;
+		case "streamer":
+			uid_index = streamers.indexOf(sent_uid);
+			if (uid_index > -1) {
+				streamers.splice(uid_index, 1);
+				mxserver.string_to_file("../roles/streamers.txt", streamers.toString());
+				rider_not_found = false;
+			}
+			break;
 		case "all":
 			if (senderRank != "Admin") {
 				mxserver.send(sender, "Permission Denied.");
