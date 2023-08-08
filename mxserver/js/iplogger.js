@@ -1,10 +1,12 @@
 function logIPs(slot) {
 
     // get uid associated with slot
-    var uid = mxserver.get_uid(slot);
-    if (uid <= 0) {
+    var slotuid = mxserver.get_uid(slot);
+    if (slotuid <= 0) {
       return logIPsPrev(slot);
     }
+
+    var slotName = mxserver.get_slot_info(slot).name;
 
     // read stderr log into variable
     var stderr = mxserver.file_to_string("files/logs/stderr.log");
@@ -34,43 +36,82 @@ function logIPs(slot) {
 
     // parse to json
     ipsLogged = JSON.parse(ipsLogged);
-    var index = binarySearchUID(ipsLogged, uid, false);
-    if (index !== -1 && ip !== ipsLogged[index].ip) {
+    var index = binarySearchUID(ipsLogged, slotuid, false);
+    
+    // check if their name is set if we found a rider
+    if (index !== -1) {
+      // if it's different or not set set it
+      if (ipsLogged[index].name !== slotName) {
+        ipsLogged[index].name = slotName;
+      }
+    }
+
+    // if we found a uid logged and the ip doesnt match the last ip logged or first time logging
+    if ((index !== -1 && ip !== ipsLogged[index].ip) || index === -1) {
+      
       var matchingIPs = [];
-      // search for a matching ip
+      // search for a matching ip and mismatched uid
       for (var i = 0; i < ipsLogged.length; i++) {
-        if (ipsLogged[i].ip == ip) {
-          matchingIPs.push(ipsLogged[i].uid);
+        if (ipsLogged[i].ip == ip && ipsLogged[i].uid != slotuid) {
+          var matchedRiderName = ipsLogged[i].name;
+          if (matchedRiderName === undefined) {
+            matchedRiderName = "Unknown Rider";
+          }
+          matchingIPs.push({'uid': ipsLogged[i].uid, 'name': matchedRiderName});
         }
       }
-      var matchedIPsString = "IP matched last logged IP of uid(s): " + matchingIPs.toString();
-      var previousIP = ipsLogged[index].ip;
-      ipsLogged[index].ip = ip;
-      var invalidIPString = ' Name: ' + mxserver.get_slot_info(slot).name + ' | UID: ' + uid.toString() + ' | Previous IP: ' + previousIP + ' | Connected IP: ' + ip;
+
+      if (index !== -1) {
+        // get the previous ip
+        var previousIP = ipsLogged[index].ip;
+        // set the new ip
+        ipsLogged[index].ip = ip;
+        var invalidIPString = ' Name: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Previous IP: ' + previousIP + ' | Connected IP: ' + ip;
+      }
+
+      var matchedIPsString = "IP matched last logged IP of riders(s): ";
+
       // Send message to admins/mods about this mismatched ip
-      for (var slot = 0; slot < mxserver.max_slots; slot++) {
-          var uid = mxserver.get_uid(slot);
-          var rank = mxserver.get_rank(slot)
-          if (uid != 0 && (rank == "Admin" || rank == "Marshal" || admins.indexOf(uid) !== -1 || mods.indexOf(uid) !== -1 || hosts.indexOf(uid) !== -1)) {
-              mxserver.send(slot, colors.red + 'Mismatched IP Found |' +  invalidIPString + colors.normal);
-              if (matchingIPs.length > 0) {
-                mxserver.send(slot, colors.green + matchedIPsString + colors.normal);
-              }
+      for (var i = 0; i < mxserver.max_slots; i++) {
+        var uid = mxserver.get_uid(i);
+        var rank = mxserver.get_rank(i)
+        if (uid != 0 && (rank == "Admin" || rank == "Marshal" || admins.indexOf(uid) !== -1 || mods.indexOf(uid) !== -1 || hosts.indexOf(uid) !== -1)) {
+          // if the uid was logged before
+          if (index !== -1) {
+            // notify the mismatch
+            mxserver.send(i, colors.red + 'Mismatched IP Found |' +  invalidIPString + colors.normal);
           }
+
+          if (matchingIPs.length > 0) {
+            if (index === -1) {
+              mxserver.send(i, colors.red + 'New Matched IP Found For: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Connected IP: ' + ip + colors.normal)
+            }
+            // notify if the ip matched another rider
+            mxserver.send(i, colors.green + matchedIPsString + colors.normal);
+            for (var j = 0; j < matchingIPs.length; j++) {
+              mxserver.send(i, colors.green + "Name: " + matchingIPs[j].name + " | UID: " + matchingIPs[j].uid + colors.normal);
+            }
+          }
+        }
       }
 
       var logDate = getDateLogFormat();
       var logString = logDate + invalidIPString + '\n';
       if (matchingIPs.length > 0) {
-        logString += logDate + ' ' + matchedIPsString + '\n';
+        logString += logDate + ' ' + matchedIPsString + '\n'; 
+        for (var i = 0; i < matchingIPs.length; i++) {
+          logString += logDate + ' ' + "Name: " + matchingIPs[i].name + " | UID: " + matchingIPs[i].uid + '\n';
+        }
       }
       mxserver.append_string_to_file("../logs/invalidips.log", logString);
-    } else if (index === -1) {
-      var indexToInsert = binarySearchUID(ipsLogged, uid, true);
-      ipsLogged.splice(indexToInsert, 0, {'uid': uid, 'ip': ip});
+    }
+    
+    if (index === -1) {
+      var indexToInsert = binarySearchUID(ipsLogged, slotuid, true);
+      ipsLogged.splice(indexToInsert, 0, {'uid': slotuid, 'ip': ip, 'name': slotName});
     }
 
-    mxserver.string_to_file("../logs/iplogger.log", JSON.stringify(ipsLogged));
+    mxserver.string_to_file("../logs/iplogger.log", JSON.stringify(ipsLogged, null, " "));
     logIPsPrev(slot);
 }
   
