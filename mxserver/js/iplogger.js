@@ -6,7 +6,8 @@ function logIPs(slot) {
       return logIPsPrev(slot);
     }
 
-    var slotName = mxserver.get_slot_info(slot).name;
+    var slotinfo = mxserver.get_slot_info(slot);
+    var slotName = slotinfo.name;
 
     // read stderr log into variable
     var stderr = mxserver.file_to_string("files/logs/stderr.log");
@@ -74,8 +75,17 @@ function logIPs(slot) {
       // Send message to admins/mods about this mismatched ip
       for (var i = 0; i < mxserver.max_slots; i++) {
         var uid = mxserver.get_uid(i);
-        var rank = mxserver.get_rank(i)
+        var rank = mxserver.get_rank(i);
+        
         if (uid != 0 && (rank == "Admin" || rank == "Marshal" || admins.indexOf(uid) !== -1 || mods.indexOf(uid) !== -1 || hosts.indexOf(uid) !== -1)) {
+          
+          var status = mxserver.get_status(i);
+          if (status == "Player") {
+            var ignore = mxserver.get_string("ignore", i);
+            if (ignore == "ALL" || (ignore == "SPECS" && slotinfo.status != "Player"))
+              continue;
+          }
+
           // if the uid was logged before
           if (index !== -1) {
             // notify the mismatch
