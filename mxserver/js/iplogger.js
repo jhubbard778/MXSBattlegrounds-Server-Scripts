@@ -104,9 +104,13 @@ function logIPs(slot) {
           }
         }
       }
-
+      
       var logDate = getDateLogFormat();
-      var logString = logDate + invalidIPString + '\n';
+      var logString = "";
+      if (index !== -1) {
+        logString += logDate + invalidIPString + '\n';
+      }
+      
       if (matchingIPs.length > 0) {
         logString += logDate + ' ' + matchedIPsString + '\n'; 
         for (var i = 0; i < matchingIPs.length; i++) {
