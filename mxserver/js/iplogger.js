@@ -37,42 +37,53 @@ function logIPs(slot) {
 
     // parse to json
     ipsLogged = JSON.parse(ipsLogged);
+
+    // find the index of the rider
     var index = binarySearchUID(ipsLogged, slotuid, false);
-    
-    // check if their name is set if we found a rider
-    if (index !== -1) {
-      // if it's different or not set set it
-      if (ipsLogged[index].name !== slotName) {
-        ipsLogged[index].name = slotName;
-      }
+
+    // if we found the uid, their name hasn't changed, and their ip hasnt changed then return
+    if (index !== -1 && ip === ipsLogged[index].ip && slotName === ipsLogged[index].name) {
+      return logIPsPrev(slot);
     }
 
     // if we found a uid logged and the ip doesnt match the last ip logged or first time logging
-    if ((index !== -1 && ip !== ipsLogged[index].ip) || index === -1) {
-      
-      var matchingIPs = [];
-      // search for a matching ip and mismatched uid
-      for (var i = 0; i < ipsLogged.length; i++) {
-        if (ipsLogged[i].ip == ip && ipsLogged[i].uid != slotuid) {
-          var matchedRiderName = ipsLogged[i].name;
-          if (matchedRiderName === undefined) {
-            matchedRiderName = "Unknown Rider";
-          }
-          matchingIPs.push({'uid': ipsLogged[i].uid, 'name': matchedRiderName});
+    var matchingIPs = [];
+    // search for a matching ip and mismatched uid
+    for (var i = 0; i < ipsLogged.length; i++) {
+      if (ipsLogged[i].ip === ip && ipsLogged[i].uid != slotuid) {
+        var matchedRiderName = ipsLogged[i].name;
+        if (matchedRiderName === undefined) {
+          matchedRiderName = "Unknown Rider";
         }
+        matchingIPs.push({'uid': ipsLogged[i].uid, 'name': matchedRiderName});
+      }
+    }
+
+    var previousIP;
+    var invalidIPString;
+    var newRider = (index === -1);
+    var ipMismatch = (index !== -1 && ipsLogged[index].ip !== ip);
+
+    if (!newRider) {
+      // check if their name mismatches, if it does change it
+      if (slotName !== ipsLogged[index].name) {
+        ipsLogged[index].name = slotName;
       }
 
-      if (index !== -1) {
+      // check if their ip mismatched
+      if (ip !== ipsLogged[index].ip) {
         // get the previous ip
-        var previousIP = ipsLogged[index].ip;
+        previousIP = ipsLogged[index].ip;
         // set the new ip
         ipsLogged[index].ip = ip;
-        var invalidIPString = ' Name: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Previous IP: ' + previousIP + ' | Connected IP: ' + ip;
+        invalidIPString = ' Name: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Previous IP: ' + previousIP + ' | Connected IP: ' + ip;
       }
+    }
 
-      var matchedIPsString = "IP matched last logged IP of riders(s): ";
+    var matchedIPsString = "IP matched last logged IP of riders(s): ";
 
-      // Send message to admins/mods about this mismatched ip
+    // Send message to admins/mods if we have a mismatched ip or a new rider with a matching ip
+    if (ipMismatch || (newRider && matchingIPs.length > 0)) {
       for (var i = 0; i < mxserver.max_slots; i++) {
         var uid = mxserver.get_uid(i);
         var rank = mxserver.get_rank(i);
@@ -85,15 +96,14 @@ function logIPs(slot) {
             if (ignore == "ALL" || (ignore == "SPECS" && slotinfo.status != "Player"))
               continue;
           }
-
+  
           // if the uid was logged before
-          if (index !== -1) {
-            // notify the mismatch
+          if (!newRider) {
             mxserver.send(i, colors.red + 'Mismatched IP Found |' +  invalidIPString + colors.normal);
           }
-
+  
           if (matchingIPs.length > 0) {
-            if (index === -1) {
+            if (newRider) {
               mxserver.send(i, colors.red + 'New Matched IP Found For: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Connected IP: ' + ip + colors.normal)
             }
             // notify if the ip matched another rider
@@ -104,23 +114,35 @@ function logIPs(slot) {
           }
         }
       }
-      
+
       var logDate = getDateLogFormat();
       var logString = "";
-      if (index !== -1) {
+      if (ipMismatch) {
         logString += logDate + invalidIPString + '\n';
       }
-      
+
       if (matchingIPs.length > 0) {
-        logString += logDate + ' ' + matchedIPsString + '\n'; 
-        for (var i = 0; i < matchingIPs.length; i++) {
-          logString += logDate + ' ' + "Name: " + matchingIPs[i].name + " | UID: " + matchingIPs[i].uid + '\n';
+        if (matchingIPs.length > 0) {
+          if (newRider) {
+            logString += logDate + ' New Matched IP Found For: ' + slotName + ' | UID: ' + slotuid.toString() + ' | Connected IP: ' + ip + '\n';
+          }
+          logString += logDate + ' ' + matchedIPsString + '\n'; 
+          for (var i = 0; i < matchingIPs.length; i++) {
+            logString += logDate + ' ' + "Name: " + matchingIPs[i].name + " | UID: " + matchingIPs[i].uid + '\n';
+          }
         }
+      }
+
+      var invalidIPsLog = mxserver.file_to_string("../logs/invalidips.log");
+      var dateHeader = getNewDateHeader();
+
+      if (!invalidIPsLog.includes(dateHeader)) {
+        mxserver.append_string_to_file("../logs/invalidips.log", "\n\t\t" + dateHeader + "\n\n");
       }
       mxserver.append_string_to_file("../logs/invalidips.log", logString);
     }
     
-    if (index === -1) {
+    if (newRider) {
       var indexToInsert = binarySearchUID(ipsLogged, slotuid, true);
       ipsLogged.splice(indexToInsert, 0, {'uid': slotuid, 'ip': ip, 'name': slotName});
     }
@@ -154,19 +176,45 @@ function binarySearchUID(arr, targetUID, insertSearch) {
 }
 
 function getDateLogFormat() {
-    // Get the current date
-    var currentDate = new Date();
+  // Get the current date
+  var currentDate = new Date();
 
-    // Format the date components
-    var year = currentDate.getFullYear();
-    var month = addLeadingZero(currentDate.getMonth() + 1);
-    var day = addLeadingZero(currentDate.getDate());
-    var hours = addLeadingZero(currentDate.getHours());
-    var minutes = addLeadingZero(currentDate.getMinutes());
-    var seconds = addLeadingZero(currentDate.getSeconds());
+  // Format the date components
+  var year = currentDate.getFullYear();
+  var month = addLeadingZero(currentDate.getMonth() + 1);
+  var day = addLeadingZero(currentDate.getDate());
+  var hours = addLeadingZero(currentDate.getHours());
+  var minutes = addLeadingZero(currentDate.getMinutes());
+  var seconds = addLeadingZero(currentDate.getSeconds());
 
-    // Create the formatted date string
-    return '[' + year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds + ']';
+  // Create the formatted date string
+  return '[' + year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds + ']';
+}
+
+function getNewDateHeader() {
+  var currentDate = new Date();
+
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  var year = currentDate.getFullYear();
+  var month = monthNames[currentDate.getMonth()];
+  var dayDate = addSuffix(currentDate.getDate());
+  var dayName = dayNames[currentDate.getDay()];
+
+  return '----- ' + dayName + ", " + month + " " + dayDate + ", " + year.toString() + ' -----';
+}
+
+function addSuffix(num) {
+  if ([11,12,13].indexOf(num % 100) !== -1) {
+    switch (num % 10) {
+      // Handle 1st, 2nd, 3rd
+      case 1: return num.toString() + 'st';
+      case 2: return num.toString() + 'nd';
+      case 3: return num.toString() + 'rd';
+    }
+  }
+  return num.toString() + 'th';
 }
 
 // Function to add leading zeros to single-digit numbers
