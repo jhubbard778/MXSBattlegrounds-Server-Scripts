@@ -206,7 +206,7 @@ function getNewDateHeader() {
 }
 
 function addSuffix(num) {
-  if ([11,12,13].indexOf(num % 100) !== -1) {
+  if ([11,12,13].indexOf(num % 100) === -1) {
     switch (num % 10) {
       // Handle 1st, 2nd, 3rd
       case 1: return num.toString() + 'st';
